@@ -1,161 +1,131 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 namespace ConsoleApp1
 {
-    class Warrior
+    // Интерфейс для бойцов
+    public interface IWarrior
     {
-        // Определение свойсств воина
-        public string Name { get; set; } = "Воин";
-        public double Health { get; set; } = 0;
-        public double AttkMax { get; set; } = 0;
-        public double BlockMax { get; set; } = 0;
+        string Name { get; set; }
+        double Health { get; set; }
+        double Attack();
+        double Block();
+    }
 
-        Random rnd = new Random();
+    // Класс Воин, реализующий интерфейс IWarrior
+    public class Warrior : IWarrior
+    {
+        public string Name { get; set; }
+        public double Health { get; set; }
+        public double AttackMax { get; set; }
+        public double BlockMax { get; set; }
+        private readonly Random _random;
 
-        // Конструктор инициализирует воина
-        public Warrior(string name = "Воин", double health = 0, double attkMax = 0, double blockMax = 0)
+        public Warrior(string name, double health, double attackMax, double blockMax)
         {
             Name = name;
             Health = health;
-            AttkMax = attkMax;
+            AttackMax = attackMax;
             BlockMax = blockMax;
+            _random = new Random();
         }
 
         public double Attack()
         {
-            return rnd.Next(1, (int)AttkMax); // рандомное число от 1 до AttkMax
+            return _random.Next(1, (int)AttackMax);
         }
 
-        // Генерировать случайное значение блока из
-        // 1 к воинам максимальный блок
         public double Block()
         {
-            return rnd.Next(1, (int)BlockMax); // рандомное число от 1 до AttkMax
+            return _random.Next(1, (int)BlockMax);
         }
     }
 
-    class Battle
+    // Класс Бой
+    public class Battle
     {
-        // Это служебный класс, поэтому это имеет смысл
-        // иметь только статические методы
-
-        // Получить оба объекта Warrior
-        public static void StartFight(Warrior warrior1, Warrior warrior2)
+        public static void StartFight(IWarrior warrior1, IWarrior warrior2)
         {
-            // процесс атаки
             while (true)
             {
-                if (GetAttackResult(warrior1, warrior2) == "Игра окончена")
+                if (GetAttackResult(warrior1, warrior2) == "Game Over")
                 {
-                    Console.WriteLine("Игра окончена");
+                    Console.WriteLine("Game Over");
                     break;
                 }
 
-                if (GetAttackResult(warrior2, warrior1) == "Игра окончена")
+                if (GetAttackResult(warrior2, warrior1) == "Game Over")
                 {
-                    Console.WriteLine("Игра окончена");
+                    Console.WriteLine("Game Over");
                     break;
                 }
             }
         }
 
-        // Принять 2 Воина
-        public static string GetAttackResult(Warrior warriorA, Warrior warriorB)
+        private static string GetAttackResult(IWarrior warriorA, IWarrior warriorB)
         {
-            // Рассчитайте, что один воин атакует, а остальные блокируют
-
             double warAAttkAmt = warriorA.Attack();
             double warBBlkAmt = warriorB.Block();
 
-            // Вычитание блока из атаки
-            double dmg2WarB = warAAttkAmt - warBBlkAmt;
+            double damageToWarB = warAAttkAmt - warBBlkAmt;
 
-            // Если был нанесен ущерб, вычтите его из здоровья
-            if (dmg2WarB > 0)
+            if (damageToWarB > 0)
             {
-                warriorB.Health = warriorB.Health - dmg2WarB;
-                Console.WriteLine("{0} атакует {1} и наносит {2} из {3} урона", warriorA.Name, warriorB.Name, dmg2WarB, warAAttkAmt);
-                Console.WriteLine("Урона было заблокировано: {0}", warBBlkAmt);
-                Console.WriteLine("{0} имеет {1} здоровья\n", warriorB.Name, warriorB.Health);
-                if (warriorA.Name == "Геральд")
-                {
-                    Move.choise(warriorA);
-                }
-                    
+                warriorB.Health -= damageToWarB;
+                Console.WriteLine("{0} attacks {1} and deals {2} damage", warriorA.Name, warriorB.Name, damageToWarB);
+                Console.WriteLine("Blocked Amount: {0}", warBBlkAmt);
+                Console.WriteLine("{0} has {1} health\n", warriorB.Name, warriorB.Health);
             }
             else
             {
-                dmg2WarB = 0;
-                Console.WriteLine("{0} безуспешно атаковал {1}", warriorA.Name, warriorB.Name);
-                Console.WriteLine("Урон был заблокирован");
-                Console.WriteLine("{0} имеет {1} здоровья\n", warriorB.Name, warriorB.Health);
+                Console.WriteLine("{0} unsuccessfully attacks {1}", warriorA.Name, warriorB.Name);
+                Console.WriteLine("Damage was blocked");
+                Console.WriteLine("{0} has {1} health\n", warriorB.Name, warriorB.Health);
             }
 
             if (warriorB.Health <= 0)
             {
-                Console.WriteLine("{0} был убил. {1} - победитель\n", warriorB.Name, warriorA.Name);
-
-                return "Игра окончена";
+                Console.WriteLine("{0} was killed. {1} wins\n", warriorB.Name, warriorA.Name);
+                return "Game Over";
             }
-            else return "Сражайся снова";
-        }
-
-    }
-
-
-    class Move
-    {
-        public static void choise(Warrior warriorA)
-        {
-            Console.WriteLine("1 - Продолжать атаковать");
-            Console.WriteLine("2 - Исцеление (+50)");
-            Console.WriteLine("3 - Сдаться");
-            string a = Console.ReadLine();
-            if (a == "1")
+            else
             {
-                Console.WriteLine();
-            }
-            if (a == "2" & warriorA.Name == "Геральд")
-            {
-                warriorA.Health = warriorA.Health + 50;
-            }
-            if (a == "3" & warriorA.Name == "Геральд")
-            {
-                warriorA.Health = warriorA.Health - warriorA.Health;
+                return "Fight Again";
             }
         }
     }
 
-   
-    class Program
+    // Класс для вывода сообщения "START GAME"
+    public class GameStartMessage
     {
-        public static void StartGame()
+        public static void ShowStartMessage()
         {
-            char[] array = {'S', 'T', 'A', 'R', 'T', ' ', 'G', 'A', 'M', 'E' };
+            char[] array = { 'S', 'T', 'A', 'R', 'T', ' ', 'G', 'A', 'M', 'E' };
             foreach (var a in array)
             {
                 Console.Write(a);
-                System.Threading.Thread.Sleep(250);
+                Thread.Sleep(250);
             }
             Console.WriteLine();
-        }   // УРОВЕНЬ 
-        static void Main(string[] args)
-        {
-            StartGame();
-            Warrior Hero = new Warrior("Геральд", 1000, 100, 50);
-            Warrior Monster = new Warrior("Рошан", 700, 130, 70);
-
-            Battle.StartFight(Hero, Monster);
-
-            Console.ReadLine();
-
         }
-
     }
 
+    // Класс Программа для запуска приложения
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            GameStartMessage.ShowStartMessage();
+            IWarrior hero = new Warrior("Геральд", 1000, 100, 50);
+            IWarrior monster = new Warrior("Рошан", 700, 130, 70);
 
+            Battle.StartFight(hero, monster);
+
+            Console.ReadLine();
+        }
+    }
 }
